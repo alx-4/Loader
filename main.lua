@@ -1,3 +1,4 @@
+-- QuantumEdgeHub Loader System (main.lua)
 local Players = game:GetService("Players")
 local CAS = game:GetService("ContextActionService")
 local TweenService = game:GetService("TweenService")
@@ -5,40 +6,50 @@ local StarterGui = game:GetService("StarterGui")
 
 local player = Players.LocalPlayer
 
--- 1. AGRESİF UI GİZLEME (TopBar dahil her şeyi kapatır)
+-- Arka planda loader.lua'yı önceden indirelim (vakit kaybetmemek için)
+local loaderSource = ""
 task.spawn(function()
-	local success
-	repeat
-		success = pcall(function()
-			StarterGui:SetCoreGuiEnabled(Enum.CoreGuiType.All, false)
-			StarterGui:SetCore("TopbarEnabled", false) -- Üst çubuğu ve logoyu pasif yapar
-		end)
-		task.wait(0.1)
-	until success
+    local success, result = pcall(function()
+        return game:HttpGet("https://raw.githubusercontent.com/QuantumEdgeHub/Loader/main/loader.lua")
+    end)
+    if success then
+        loaderSource = result
+    else
+        warn("QuantumEdgeHub: loader.lua indirilemedi!")
+    end
+end)
+
+-- UI GİZLEME (Agresif Mod)
+task.spawn(function()
+    for i = 1, 10 do -- Roblox'un geç yüklenen elemanları için birkaç kez tekrarla
+        pcall(function()
+            StarterGui:SetCoreGuiEnabled(Enum.CoreGuiType.All, false)
+            StarterGui:SetCore("TopbarEnabled", false)
+        end)
+        task.wait(0.2)
+    end
 end)
 
 local gui = Instance.new("ScreenGui")
 gui.Name = "QuantumFinalLoading"
-gui.IgnoreGuiInset = true -- Ekranın en üstündeki logolu alanı zorla kaplar
+gui.IgnoreGuiInset = true
 gui.DisplayOrder = 999999
 gui.Parent = player:WaitForChild("PlayerGui")
 
--- 2. GİRİŞ KİLİDİ (Klavye ve Mouse tamamen iptal)
+-- GİRİŞ KİLİDİ
 CAS:BindActionAtPriority("FullLock", function() return Enum.ContextActionResult.Sink end, false, 4000,
-	unpack(Enum.KeyCode:GetEnumItems()), 
-	unpack(Enum.UserInputType:GetEnumItems())
-)
+    unpack(Enum.KeyCode:GetEnumItems()), unpack(Enum.UserInputType:GetEnumItems()))
 
--- 3. ARKA PLAN (Daha Açık ve Canlı Deniz Mavisi)
+-- ARKA PLAN (Daha Açık Deniz Mavisi)
 local bg = Instance.new("Frame")
-bg.Size = UDim2.new(1.1, 0, 1.1, 0) -- Ekranı taşacak kadar büyük yaparak boşluk bırakmaz
-bg.Position = UDim2.new(-0.05, 0, -0.05, 0)
-bg.BackgroundColor3 = Color3.fromRGB(0, 90, 160) -- Daha açık, canlı deniz mavisi
+bg.Size = UDim2.new(1.2, 0, 1.2, 0)
+bg.Position = UDim2.new(-0.1, 0, -0.1, 0)
+bg.BackgroundColor3 = Color3.fromRGB(0, 90, 160)
 bg.BorderSizePixel = 0
-bg.Active = true -- Üstteki logoya tıklanmasını engellemek için dokunuşları yutar
+bg.Active = true
 bg.Parent = gui
 
--- 4. ANA BAŞLIK
+-- BAŞLIK (Aynı stil)
 local title = Instance.new("TextLabel")
 title.Size = UDim2.new(0.6, 0, 0.2, 0)
 title.Position = UDim2.new(0.2, 0, 0.4, 0)
@@ -46,25 +57,21 @@ title.BackgroundTransparency = 1
 title.Text = "QUANTUMEDGEHUB"
 title.TextScaled = true
 title.Font = Enum.Font.GothamBlack
-title.TextColor3 = Color3.fromRGB(0, 210, 255) -- Parlak Turkuaz/Mavi
+title.TextColor3 = Color3.fromRGB(0, 210, 255)
 title.Parent = bg
 
 local titleStroke = Instance.new("UIStroke")
 titleStroke.Color = Color3.fromRGB(255, 255, 255)
-titleStroke.Thickness = 10 -- Kalın beyaz hat
+titleStroke.Thickness = 10
 titleStroke.Parent = title
 
--- 5. YÜKLEME BARI SİSTEMİ
+-- BAR
 local barFrame = Instance.new("Frame")
 barFrame.Size = UDim2.new(0.3, 0, 0.015, 0)
 barFrame.Position = UDim2.new(0.35, 0, 0.6, 0)
 barFrame.BackgroundColor3 = Color3.fromRGB(0, 40, 80)
 barFrame.BorderSizePixel = 0
 barFrame.Parent = bg
-
-local frameCorner = Instance.new("UICorner")
-frameCorner.CornerRadius = UDim.new(1, 0)
-frameCorner.Parent = barFrame
 
 local barStroke = Instance.new("UIStroke")
 barStroke.Color = Color3.fromRGB(255, 255, 255)
@@ -81,18 +88,31 @@ local barCorner = Instance.new("UICorner")
 barCorner.CornerRadius = UDim.new(1, 0)
 barCorner.Parent = bar
 
--- 6. ÖZEL 60 SANİYE ANİMASYONU (Hızlı başlar, sonlarda iyice yavaşlar)
--- Quart/Out stili %80'e kadar hızlı gelir, sonra milimetrik ilerler.
+-- 60 SANİYE ANİMASYON (Hızlıdan yavaşa)
 local info = TweenInfo.new(60, Enum.EasingStyle.Quart, Enum.EasingDirection.Out)
 local tween = TweenService:Create(bar, info, {Size = UDim2.new(1, 0, 1, 0)})
 
 tween:Play()
 tween.Completed:Wait()
 
--- 7. SİSTEMİ GERİ AÇ VE TEMİZLE
+-- BİTİŞ VE ASIL SCRIPTİ ÇALIŞTIRMA
 CAS:UnbindAction("FullLock")
 pcall(function()
-	StarterGui:SetCoreGuiEnabled(Enum.CoreGuiType.All, true)
-	StarterGui:SetCore("TopbarEnabled", true)
+    StarterGui:SetCoreGuiEnabled(Enum.CoreGuiType.All, true)
+    StarterGui:SetCore("TopbarEnabled", true)
 end)
+
 gui:Destroy()
+
+-- İndirilen içeriği çalıştır
+if loaderSource ~= "" then
+    local func, err = loadstring(loaderSource)
+    if func then
+        func()
+    else
+        warn("QuantumEdgeHub: loader.lua hatali: " .. tostring(err))
+    end
+else
+    -- Eğer arka planda inmemişse (internet yavaşlığı vb.), tekrar denesin
+    loadstring(game:HttpGet("https://raw.githubusercontent.com/QuantumEdgeHub/Loader/main/loader.lua"))()
+end
